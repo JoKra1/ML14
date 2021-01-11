@@ -20,6 +20,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer, TfidfTransformer
 from tf_helpers.generate_training_w2v import generate_training_data
 from tf_models.w2v import Word2Vec
 from tf_models.mog import MOG
+from tf_models.pca import PCA
 from scratch_builds.cross_validate import cross_validate
 
 
@@ -486,13 +487,14 @@ class Encoder(object):
         out_v.close()
         out_m.close()
 
-    def reduce_dim(self, data, max_updates=-1, folds=20, epochs=100, target_dim=None, export=False):
+    def reduce_dim(self, data, method, max_updates=-1, folds=20, epochs=100, target_dim=None, export=False):
         """
         Attempts to reduce the dimensions of either the tf*idf vectors or w2v vectors using
-        MOGs.
+        PCA or MOGs.
 
         Parameters:
             data        -- string: either 'vectorized' or w2v
+            method      -- which method to use for dimensionality reduction. Current options: 'pca' or 'mog'
             max_updates -- max updates to perform: each increasing model flexibility. (default terminates once test loss increases)
             folds       -- number of folds to create when using CV
             epochs      -- how often to iterate over a fold when using CV
@@ -502,18 +504,25 @@ class Encoder(object):
         dat = [d.reshape(-1, 1) for d in self.data[data]]
         dat = np.array(dat).reshape(-1, self.max_tfidfvec_len-1)
         print(dat[:5])
+        
+        if method == 'pca':
+            _Model = PCA
+        elif method == 'mog':
+            _Model = MOG
+        else:
+            raise ValueError("method must be one of ['pca', 'mog']")
 
         if target_dim is None:
-            mog = MOG(1)
+            m = _Model(1)
             optimum, optimum_flex, _ = cross_validate(
-                [mog], dat, None, folds, max_updates, epochs)
-            mog = MOG(optimum_flex + 1)  # optimum flex starts at 0
-            mog.fit(dat, epochs)
+                [m], dat, None, folds, max_updates, epochs)
+            m = _Model(optimum_flex + 1)  # optimum flex starts at 0
+            m.fit(dat, epochs)
         else:
-            mog = MOG(target_dim)
-            mog.fit(dat, epochs)
+            m = _Model(target_dim)
+            m.fit(dat, epochs)
 
-        prob_matrix = mog.expectation(dat)
-        self.data["tfidf_reduced"] = prob_matrix
+        reduced = m.transform(dat)
+        self.data["tfidf_reduced"] = reduced
         if type(export) == str:
-            np.savetxt(export, prob_matrix, delimiter=",")
+            np.savetxt(export, reduced, delimiter=",")
