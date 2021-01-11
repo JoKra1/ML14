@@ -25,6 +25,9 @@ class MOG(object):
     def expectation(self, X):
         prob_matrix = self.mixture.predict_proba(X)
         return prob_matrix
+    
+    def transform(self, X):
+        return expectation(self, X)
 
     def clear(self):
         self.mixture = GaussianMixture(
