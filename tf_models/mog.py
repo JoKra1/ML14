@@ -19,7 +19,6 @@ class MOG(object):
         self.mixture.fit(X)
 
     def calculate_loss(self, X):
-
         return -1 * self.mixture.score(X)
 
     def expectation(self, X):
@@ -27,7 +26,7 @@ class MOG(object):
         return prob_matrix
     
     def transform(self, X):
-        return expectation(self, X)
+        return self.expectation(X)
 
     def clear(self):
         self.mixture = GaussianMixture(
