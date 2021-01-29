@@ -155,7 +155,7 @@ class Encoder(object):
             cleaned = pd.DataFrame.from_dict(exp)
             cleaned.to_csv(export, sep=",", index=False)
 
-    def tfidf_vectorize(self, ngrams, min_df=1, max_features=None, train=True):
+    def tfidf_vectorize(self, ngrams, min_df=1, max_features=None, train=True, export=False):
         """
         Creates TF*IDF trainings matrix based on min idf feature selection.
         Also creates a dictionary of the features considered important
@@ -212,6 +212,10 @@ class Encoder(object):
             ### Each vec here is a max_tfidfvec_len*1 dim vector for a sigle document ###
             for vec in tfidf_vectors:
                 self.data["vectorized"].append(vec)
+
+            ### Export vectorized data ###
+            if type(export) == str:
+                np.savetxt("data/fake_news/vectorized.csv",tfidf_vectors,delimiter=",")
 
         else:
             ### ToDo: Use vectorizer attached to instance to process new (test) input ###
