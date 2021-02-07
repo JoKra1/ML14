@@ -2,3 +2,4 @@ __pycache__
 data/fake_news/**
 .ipynb_checkpoints
 .vscode/*
+*.dot
