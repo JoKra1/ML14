@@ -91,10 +91,15 @@ class Encoder(object):
         spellcheck = SpellChecker(language='en')
 
         cleaned = []
+        no_text_counter = 0
+        spell_check_counter = 0
+        too_short_counter = 0
+
         for id, text, label in tqdm(zip(ids, texts, labels), total=len(ids), desc="Pre-Processing"):
 
             if type(text) != str:
                 ### This is no text ###
+                no_text_counter += 1
                 continue
 
             ### Special characters treatment ###
@@ -117,6 +122,8 @@ class Encoder(object):
             tokens = word_tokenize(no_punct)
 
             if not len(tokens):
+                ### Too short ###
+                too_short_counter += 1
                 continue
 
             ### Spell check (note this also includes neo-anglicisms) ###
@@ -125,13 +132,23 @@ class Encoder(object):
 
             if grammar_ratio > g_cut:
                 ### This is likely not English. ###
+                # print(tokens[0:10])
+                spell_check_counter +=1
                 continue
 
             ### Remove Stopwords ###
             tokens = [t for t in tokens if t not in self.stop_words]
 
             if len(tokens) < min_len:
+                ### Too short ###
+                too_short_counter += 1
                 continue
+            
+            ### Stemm words ###
+            if stem:
+                ps = SnowballStemmer("english")
+
+                tokens = [ps.stem(t) for t in tokens]
 
             ### Convert back to string for easier storage ###
             tokens = " ".join(tokens)
@@ -144,6 +161,10 @@ class Encoder(object):
 
         print(
             f"Number of documents after pre-processing: {len(self.data['ids'])}")
+        
+        print(f"Removed {no_text_counter} entries that did not contain text")
+        print(f"Removed {spell_check_counter} entries that had a grammar ratio > {g_cut}")
+        print(f"Removed {too_short_counter} entries that had less than {min_len} tokens after removing stopwords")
 
         if type(export) == str:
             exp = {"ids": self.data["ids"],
@@ -153,7 +174,7 @@ class Encoder(object):
                    "preprocessed": self.data["preprocessed"]
                    }
             cleaned = pd.DataFrame.from_dict(exp)
-            cleaned.to_csv(export, sep=",", index=False)
+            cleaned.to_csv(export, sep=",", index=False,encoding="utf-8")
 
     def tfidf_vectorize(self, ngrams, min_df=1, max_features=None, train=True, export=False):
         """
@@ -221,275 +242,6 @@ class Encoder(object):
             ### ToDo: Use vectorizer attached to instance to process new (test) input ###
             pass
 
-    def padd_shrink_documents(self, maxlen=None, export=False, import_text=False):
-        """
-        Based on idf vocab generated earlier shrink size
-        of each document. Then calculate max document length (if not
-        specified) and padd all shorter/truncate all longer documents
-        to match length. Then vectorize documents based on dictionary
-        created earlier. Allows to export-import the word-reduced documents
-        (see details).
-
-        Details:
-        To train the W2V model we need to represent each documents using tokens (
-        unique integer for each word in the document). The vectorized documents
-        are to be padded with zeros if they are shorter than the max length (either
-        a specified value or determined by the longest document). If we truncate
-        the max-length to say 300, semantic structure only observable in later parts of
-        longer documents will not be encoded in the final word embeddings learned by
-        W2V (if there is such semantic sturcture restircted to later sections of
-        longer articles is something I do not know). In a first step the method here
-        reduces each article to only contain the words included in the vocabulary generated
-        earlier. In a second step it pads each document with a '' (padding char) until
-        it matches the max length determined or truncates a document that exceeds the
-        max-length. Finally, it uses the vocabulary dictionary created by the
-        tfidf_vectorize() method to convert the word reduced and padded/truncated documents
-        in text-form to token sequences (unique integer for each word.).
-
-        Parameters:
-        maxlen              -- max lenght of a document to keep for W2V training
-        export              -- either boolean or string to path for export
-        import_text         -- either boolean or string to path for import of word reduced documents.
-
-        """
-        ### Collect documents and split them ###
-        docs = [p.split(" ") for p in self.data["preprocessed"]]
-        names = self.tfidf.get_feature_names()
-
-        ### Import or calculate reduced documents ###
-        if type(import_text) != str:
-            ### Reduce documents to include only word in vocabulary created earlier. ###
-            warnings.warn(
-                "Depending on min IDF cut-off selected earlier this may take a while. Consider importing the reduced documents.")
-            docs = [[d_idf for d_idf in d if d_idf in names] for d in tqdm(
-                docs, total=len(docs), desc="Reducing document size")]
-            if type(export) == str:
-                """
-                Export only reduced text.
-                """
-                docs_exp = [" ".join(doc) for doc in docs]
-                exp = pd.DataFrame(docs_exp, columns=["reduced_text"])
-                exp.to_csv(export, sep=",", index=False)
-
-        else:
-            docs = pd.read_csv(import_text, header=0).values.tolist()
-            try:
-                docs = [d[0].split(" ") for d in docs]
-            except AttributeError:
-                warnings.warn(
-                    "Empty documents in import. Consider increasing Vocabulary sice.")
-                docs = [d[0].split(" ") if type(d[0]) ==
-                        str else [''] for d in docs]
-
-        ### Collect length of each shrinked doc and calc max_len###
-        if not maxlen:
-            docs_l = [len(d) for d in docs]
-            max_len = max(docs_l)
-        else:
-            max_len = maxlen
-
-        print(f"Max document length was: {max_len}")
-
-        ### Append vectorized padded doc ###
-        data_index = 0
-        print("Some example padded vectors + conversions:")
-        for d in docs:
-            if len(d) > max_len:
-                padded_doc = d[:max_len]
-            else:
-                padded_doc = d
-                while len(padded_doc) < max_len:
-                    padded_doc.append('')
-            vect_pad_doc = [self.vocab[s] for s in padded_doc]
-            self.data["padded_vectors"].append(np.array(vect_pad_doc))
-            if data_index < 5:
-                print(
-                    f"Vectorized padded : {vect_pad_doc[:10]} => {padded_doc[:10]}")
-            data_index += 1
-
-    def sample_negative_w2v(self, sequences, window_n=4, negative_n=2, seed=42):
-        """
-        'Generates skip-gram pairs with negative sampling for a list of sequences
-        (int-encoded sentences) based on window size, number of negative samples
-        and vocabulary size'. Utilizes negative sampling as discussed by Mikolov. et al. (2013).
-
-        Details:
-        See https://www.tensorflow.org/tutorials/text/word2vec
-
-        Parameters:
-        sequences:      	-- a list of documents, can also be entire corpus
-        window_n:           -- window size for context creation
-        negative_n          -- number of negative samples
-        seed                -- rng seed
-
-        Taken & adapted from:
-        https://www.tensorflow.org/tutorials/text/word2vec
-        """
-
-        print(
-            f"Creating training samples for W2V based on {len(sequences)} documents")
-        targets, contexts, labels = generate_training_data(sequences=sequences,
-                                                           window_size=window_n,
-                                                           num_ns=negative_n,
-                                                           vocab_size=self.max_tfidfvec_len,
-                                                           seed=seed)
-
-        print(f"Number of training points for w2v model: {len(targets)}")
-        return targets, contexts, labels
-
-    def w2v_embed(self, embedding_dim=128, negative_n=2):
-        """
-        Attaches to this encoder instance, a w2v skip-gram model.
-
-        Details:
-        See https://www.tensorflow.org/tutorials/text/word2vec
-
-        Parameters:
-        embedding_dim       -- target dimension of semantic vectors
-        negative_n          -- number of negative samples. Must match
-                               argument passed to sample_negative_w2v()
-
-        Taken & adapted from:
-        https://www.tensorflow.org/tutorials/text/word2vec
-        """
-
-        self.w2v = Word2Vec(self.max_tfidfvec_len, embedding_dim, negative_n)
-        self.w2v.compile(optimizer='adam',
-                         loss=tf.keras.losses.CategoricalCrossentropy(
-                             from_logits=True),
-                         metrics=['accuracy'])
-
-        print("Attached W2V-Skipgram model")
-
-    def w2v_fit(self, batch_size=1024, buffer_size=10000, embedding_dim=128, negative_n=2, epochs=40):
-        """
-        Fits thw W2V skipgram model on the entire corpus, in one go. Note that this only
-        ever works if you have a huge amount of ram or if you selected a relatively short
-        max sequence length in the earlier steps (100-200). If you want to train on the
-        entire possible sequence length use w2v_fit_iter instead.
-
-        Details:
-        See https://www.tensorflow.org/tutorials/text/word2vec
-
-        Parameters:
-        batch_size      -- batch size used in one gradient iteration
-        buffer_size     -- buffer size used for dataset generation by TF
-        embedding_dim   -- target dimension of semantic vectors
-        negative_n      -- number of negative samples
-        epochs          -- How many time model should see entire corpus
-
-        Taken & adapted from:
-        https://www.tensorflow.org/tutorials/text/word2vec
-        """
-        targets, contexts, labels = self.sample_negative_w2v(self.data["padded_vectors"],
-                                                             embedding_dim, negative_n)
-
-        dataset = tf.data.Dataset.from_tensor_slices(
-            ((targets, contexts), labels))
-        dataset = dataset.shuffle(buffer_size).batch(
-            batch_size, drop_remainder=True)
-        dataset = dataset.cache().prefetch(buffer_size=AUTOTUNE)
-
-        self.w2v.fit(dataset, epochs=epochs)
-
-        print("Finished training w2v")
-
-    def w2v_fit_iter(self, docs_n, batch_size=1024, buffer_size=10000, embedding_dim=128, negative_n=2, epochs=30, export=False):
-        """
-        The iterative W2V fitting method. For each epoch, the entire corpus is first shuffled.
-        In a second step, the corpus is seperated into intervals of length docs_n. Training data
-        is generated for the interval and send to the model, which performs 1 pass over the training set.
-        This is repeated for all intervals, and once the model has performed one pass over all intervals
-        it has completed one epoch since it has performed a pass over the entire corpus.
-
-        Details:
-        See https://www.tensorflow.org/tutorials/text/word2vec
-
-        Parameters:
-        docs_n          -- number of documents from which training examples should be created
-        batch_size      -- batch size used in one gradient iteration
-        buffer_size     -- buffer size used for dataset generation by TF
-        embedding_dim   -- target dimension of semantic vectors
-        negative_n      -- number of negative samples
-        epochs          -- How many time model should see entire corpus
-        export          -- boolean or string with path to export of W2V weights
-
-        Adapted from:
-        https://www.tensorflow.org/tutorials/text/word2vec
-        """
-        completed_intervals = 0
-        for e in range(epochs):
-            # For every epoch shuffle the dataset
-            sequences = self.data["padded_vectors"][:]
-            random.shuffle(sequences)
-            intervals = [0]
-            ### Create intervals (e.g. range of indices of documents) ###
-            while intervals[-1] + docs_n < len(sequences):
-                intervals.append(intervals[-1] + docs_n)
-            ### Go through all document 'batches' ###
-            for i in range(1, len(intervals)):
-                batch_seq = sequences[intervals[i-1]:intervals[i]]
-
-                targets, contexts, labels = self.sample_negative_w2v(batch_seq,
-                                                                     embedding_dim,
-                                                                     negative_n)
-
-                dataset = tf.data.Dataset.from_tensor_slices(
-                    ((targets, contexts), labels))
-                dataset = dataset.shuffle(buffer_size).batch(
-                    batch_size, drop_remainder=True)
-                dataset = dataset.cache().prefetch(buffer_size=AUTOTUNE)
-
-                hist = self.w2v.fit(dataset, epochs=1, verbose=0)
-                completed_intervals += 1
-                if completed_intervals % 5 == 0:
-                    loss = hist.history["loss"][-1]
-                    acc = hist.history["accuracy"][-1]
-                    print(
-                        f"Completed Intervals: {completed_intervals} Loss: {loss} Accuracy: {acc}")
-
-                ### Enforce garbage collection cycle on unnecessary (old) trainings structures ###
-                del targets
-                del contexts
-                del labels
-                del dataset
-                gc.collect()
-
-            loss = hist.history["loss"][-1]
-            acc = hist.history["accuracy"][-1]
-            print(f"Epoch: {e+1} Loss: {loss} Accuracy: {acc}")
-
-            if type(export) == str:
-                ### Export Wv2 vectors and meta data after each epoch. ###
-                self.export_w2v(export)
-
-    def export_w2v(self, export):
-        """
-        Exports W2V vectors and meta data.
-
-        Details:
-        See https://www.tensorflow.org/tutorials/text/word2vec
-
-        Parameters:
-        export      -- boolean or string with path to export
-
-        Taken & adapted from:
-        https://www.tensorflow.org/tutorials/text/word2vec
-        """
-        weights = self.w2v.get_layer('w2v_embedding').get_weights()[0]
-        vocab = self.tfidf.get_feature_names()
-
-        out_v = io.open(export + 'vectors.tsv', 'w', encoding='utf-8')
-        out_m = io.open(export + 'metadata.tsv', 'w', encoding='utf-8')
-
-        for index, word in enumerate(vocab):
-            if index == 0:
-                continue  # skip 0, it's padding.
-            vec = weights[index]
-            out_v.write('\t'.join([str(x) for x in vec]) + "\n")
-            out_m.write(word + "\n")
-        out_v.close()
-        out_m.close()
 
     def reduce_dim(self, data, method, max_updates=-1, folds=20, epochs=100, target_dim=None, export=False):
         """
@@ -530,3 +282,23 @@ class Encoder(object):
         self.data["tfidf_reduced"] = reduced
         if type(export) == str:
             np.savetxt(export, reduced, delimiter=",")
+    
+    def generate_combined_training_data(self,candidates,export=False):
+        """
+        Combines all available features into training set
+        """
+        data = [self.data[candidate] for candidate in candidates]
+        output = []
+        for row in zip(*data):
+            new_row = []
+            for entry in row:
+                if isinstance(entry,(list,np.ndarray)):
+                    for i in entry:
+                        new_row.append(i)
+                else:
+                    new_row.append(entry)
+            output.append(np.array(new_row))
+        output = np.array(output)
+        if type(export) == str:
+            np.savetxt(export, output, delimiter=",")
+        return output

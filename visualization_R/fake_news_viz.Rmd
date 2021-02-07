@@ -1,0 +1,269 @@
+---
+title: "Fake news | Visualization"
+author: "ML 14"
+date: "2/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(plotly)
+library(scales)
+library(tm)
+library(wordcloud)
+library(RColorBrewer)
+library(plyr)
+library(dplyr)
+```
+
+
+# Word clouds
+
+Source of code: https://towardsdatascience.com/create-a-word-cloud-with-r-bde3e7422e8a
+
+
+```{r}
+dat <- read.csv("data/fake_news/cleaned_train_stem.csv",sep=",",header = T)
+```
+
+
+```{r}
+fake <- dat[dat$labels == 1,"preprocessed"]
+valid <- dat[!dat$labels == 1,"preprocessed"]
+
+docs_valid <- Corpus(VectorSource(valid))
+docs_fake <- Corpus(VectorSource(fake))
+
+```
+
+```{r}
+dtm <- TermDocumentMatrix(docs_valid) 
+matrix <- as.matrix(dtm) 
+words <- sort(rowSums(matrix),decreasing=TRUE) 
+df <- data.frame(word = names(words),freq=words)
+```
+
+```{r}
+set.seed(1234)
+wordcloud(words = df$word, freq = df$freq, min.freq = 10,
+          max.words=200, random.order=FALSE, rot.per=0.35,
+          colors=brewer.pal(8, "Dark2"),scale = c(5,0.25))
+```
+
+```{r}
+rm(matrix)
+dtm <- TermDocumentMatrix(docs_fake) 
+matrix <- as.matrix(dtm) 
+words <- sort(rowSums(matrix),decreasing=TRUE) 
+df <- data.frame(word = names(words),freq=words)
+```
+
+```{r}
+wordcloud(words = df$word, freq = df$freq, min.freq = 10,
+          max.words=200, random.order=FALSE, rot.per=0.35,
+          colors=brewer.pal(8, "Dark2"),scale = c(2.5,0.25))
+```
+
+# Histograms and Density estimates
+
+```{r}
+dat <- read.csv("data/fake_news/cleaned_train.csv",sep=",",header = T)
+```
+
+
+```{r}
+dat$split_preprocessed <- strsplit(dat$preprocessed, " ")
+
+sum_dat <- ddply(dat,c("ids"),summarise,
+                 art_length = length(unlist(split_preprocessed)),
+                 label = labels)
+
+summary(sum_dat$art_length)
+sd(sum_dat$art_length)
+
+summary(sum_dat$art_length[sum_dat$label == 1])
+sd(sum_dat$art_length[sum_dat$label == 1])
+
+summary(sum_dat$art_length[sum_dat$label == 0])
+sd(sum_dat$art_length[sum_dat$label == 0])
+
+hist(sum_dat$art_length,breaks = 100,xlim=c(0,6000),main="Histogram of article length",
+     xlab="Article length")
+
+hist(sum_dat$art_length[sum_dat$label == 1],breaks = 100,col=alpha("yellow",0.3),xlim=c(0,6000),
+     main="Histogram of article length",
+     xlab="Article length")
+hist(sum_dat$art_length[sum_dat$label == 0],breaks = 100,col=alpha("purple",0.3),add=T)
+legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
+
+```
+
+```{r}
+# Comparison of quotes
+quotes_unreliable <- dat$n_quotes[dat$label == 1]
+quotes_reliable <- dat$n_quotes[!dat$label == 1]
+
+summary(quotes_unreliable)
+sd(quotes_unreliable)
+
+summary(quotes_reliable)
+sd(quotes_reliable)
+
+hist(quotes_unreliable,col = alpha("yellow",0.3),breaks = 100,
+     xlab = "Number of quotes",main="Histogram of quote frequency",xlim=c(0,110))
+hist(quotes_reliable,col = alpha("purple",0.3),breaks = 100,add=T)
+legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
+```
+
+```{r}
+# Comparison of grammar_ratio
+grammar_unreliable <- dat$grammar_ratio[dat$label == 1]
+grammar_reliable <- dat$grammar_ratio[!dat$label == 1]
+
+summary(grammar_unreliable)
+sd(grammar_unreliable)
+
+summary(grammar_reliable)
+sd(grammar_reliable)
+
+plot(density(grammar_unreliable),ylim=c(0,55),col=alpha("yellow",0.3),
+     main="Kernel based PDF estimate for grammar ratio",xlab="Grammar ratio")
+polygon(density(grammar_unreliable),col=alpha("yellow",0.3),border = alpha("yellow",0.3))
+lines(density(grammar_reliable),col=alpha("purple",0.3))
+polygon(density(grammar_reliable),col=alpha("purple",0.3),border = alpha("purple",0.3))
+legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
+```
+
+
+# PCA visualization
+
+```{r}
+dat <- read.csv("data/fake_news/pca_viz_red_bigram_stem.csv",sep=",",header = T)
+dat$label[dat$label == 1] <- "Fake-news"
+dat$label[dat$label == 0] <- "Validated article"
+```
+
+
+```{r}
+plot(dat$pc1,dat$pc2,col = ifelse(dat$label == "Fake-news",alpha("yellow",0.75),
+                                                           alpha("purple",0.75)),
+     pch=19,xlab="PC 1",ylab="PC 2",main="Projections on PCs for Unigram + Bigram TF-IDF vectors (stemmed)")
+legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
+```
+
+
+# Forest OOB estimates
+
+```{r}
+forest50 <- read.csv("data/fake_news/forest50.csv",sep=",",header=T)
+forest75 <- read.csv("data/fake_news/forest75.csv",sep=",",header=T)
+forest100 <- read.csv("data/fake_news/forest100.csv",sep=",",header=T)
+forest150 <- read.csv("data/fake_news/forest150.csv",sep=",",header=T)
+
+forest50$OOBerror <- 1 - forest50$OOB
+forest75$OOBerror <- 1 - forest75$OOB
+forest100$OOBerror <- 1 - forest100$OOB
+forest150$OOBerror <- 1 - forest150$OOB
+```
+
+```{r}
+par(mfrow=c(2,2))
+
+N <- unique(forest50$N)
+NF <- unique(forest50$NF)
+colors <- c("red","blue","green","orange","pink","black","purple","darkblue","darkgreen","lightblue")
+
+# 50 principal components
+subdat <- forest50[forest50$N == N[1],]
+plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],
+     ylab = "OOB error",xlab="Number of Features",main="50 Principal components",lty="dashed")
+points(NF,subdat$OOBerror,col=colors[1],pch=19,cex=1.25)
+
+col_count <- 2
+for (n in N[2:length(N)]) {
+  subdat <- forest50[forest50$N == n,]
+  lines(NF,subdat$OOBerror,col=colors[col_count],lty="dashed")
+  points(NF,subdat$OOBerror,col=colors[col_count],pch=19,cex=1.25)
+  col_count <- col_count + 1
+}
+
+# 75 principal components
+subdat <- forest75[forest75$N == N[1],]
+plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],
+     ylab = "",xlab="Number of Features",main="75 Principal components",lty="dashed")
+points(NF,subdat$OOBerror,col=colors[1],pch=19,cex=1.25)
+
+col_count <- 2
+for (n in N[2:length(N)]) {
+  subdat <- forest75[forest75$N == n,]
+  lines(NF,subdat$OOBerror,col=colors[col_count],lty="dashed")
+  points(NF,subdat$OOBerror,col=colors[col_count],pch=19,cex=1.25)
+  col_count <- col_count + 1
+}
+
+# 100 principal components
+subdat <- forest100[forest100$N == N[1],]
+plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],
+     ylab = "OOB error",xlab="",main="100 Principal components",lty="dashed")
+points(NF,subdat$OOBerror,col=colors[1],pch=19,cex=1.25)
+
+col_count <- 2
+for (n in N[2:length(N)]) {
+  subdat <- forest100[forest100$N == n,]
+  lines(NF,subdat$OOBerror,col=colors[col_count],lty="dashed")
+  points(NF,subdat$OOBerror,col=colors[col_count],pch=19,cex=1.25)
+  col_count <- col_count + 1
+}
+
+# 150 principal components
+subdat <- forest150[forest150$N == N[1],]
+plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],
+     ylab = "",xlab="",main="150 Principal components",lty="dashed")
+points(NF,subdat$OOBerror,col=colors[1],pch=19,cex=1.25)
+
+col_count <- 2
+for (n in N[2:length(N)]) {
+  subdat <- forest150[forest150$N == n,]
+  lines(NF,subdat$OOBerror,col=colors[col_count],lty="dashed")
+  points(NF,subdat$OOBerror,col=colors[col_count],pch=19,cex=1.25)
+  col_count <- col_count + 1
+}
+
+par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+   plot(0, 0, type = 'l', bty = 'n', xaxt = 'n', yaxt = 'n')
+   legend('bottom',legend = N, col = colors,
+          lwd = 5, xpd = TRUE, horiz = TRUE,
+          cex = 1, seg.len=1, bty = 'n',
+          title="        Ensemble Size:")
+   
+forest50[forest50$OOB == max(forest50$OOB),]
+forest75[forest75$OOB == max(forest75$OOB),]
+forest100[forest100$OOB == max(forest100$OOB),]
+forest150[forest150$OOB == max(forest150$OOB),]
+
+```
+
+
+```{r}
+# 100 principal components
+subdat <- forest100[forest100$N == N[1],]
+plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],
+     ylab = "OOB error",xlab="",main="100 Principal components",lty="dashed")
+points(NF,subdat$OOBerror,col=colors[1],pch=19,cex=1.25)
+
+col_count <- 2
+for (n in N[2:length(N)]) {
+  subdat <- forest100[forest100$N == n,]
+  lines(NF,subdat$OOBerror,col=colors[col_count],lty="dashed")
+  points(NF,subdat$OOBerror,col=colors[col_count],pch=19,cex=1.25)
+  col_count <- col_count + 1
+}
+
+par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 4, 0, 4), new = TRUE)
+   plot(0, 0, type = 'l', bty = 'n', xaxt = 'n', yaxt = 'n',ylab="")
+   legend('bottom',legend = N, col = colors,
+          lwd = 5, xpd = TRUE, horiz = TRUE,
+          cex = 1, seg.len=0.25, bty = 'n',
+          title="        Ensemble Size:")
+```
+
