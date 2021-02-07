@@ -19,8 +19,8 @@ class PCA(object):
     def calculate_dissimilarity(self,m,S):
         """
         Parameters:
-            m       -- target dim
-            S       -- S part of SVD (contains eigen values)
+        m       -- target dim
+        S       -- S part of SVD (contains eigen values)
         """
         relative_dissimilarity = sum(S[m:])/sum(S)
         print(f"Relative dissimilarity for m = {m} is: {relative_dissimilarity}")
@@ -29,8 +29,8 @@ class PCA(object):
     def calculate_mean_square(self,m,S):
         """
         Parameters:
-            m       -- target dim
-            S       -- S part of SVD (contains eigen values)
+        m       -- target dim
+        S       -- S part of SVD (contains eigen values)
         """
         msq = sum(S[m:])
         print(f"Mean-Square for m = {m} is: {msq}")
@@ -39,7 +39,7 @@ class PCA(object):
     def calculate_stats(self,m):
         """
         Parameters:
-            m       -- target dim
+        m       -- target dim
         """
         ### Extract fit statistics ###
         msq = self.calculate_mean_square(m,self.S)
@@ -49,11 +49,24 @@ class PCA(object):
     def calculate_reduced(self,m):
         """
         Parameters:
-            m       -- target dim
+        m       -- target dim
         """
         self.red_S = self.S[:m]
         self.red_U = self.U[:,:m]
+    
+    def encode(self,X):
+        """
+        Converts a numpy array into the encoded representation using
+        only the retained Principal components.
+        """
+        features = []
+        for i in range(X.shape[1]):
+            x = X[:,i] - self.mu
 
+            feature = self.red_U.T.dot(x)
+            features.append(feature.T)
+        return np.array(features)
+        
 
     def calculate_loss(self, X):
         """

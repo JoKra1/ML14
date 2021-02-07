@@ -36,11 +36,11 @@ if __name__ == "__main__":
     e.preprocess(replacement_pairs, export="data/fake_news/cleaned_train_stem.csv",stem=True,min_len=10,g_cut=0.1)
 
     ### TFIDF ###
-    e.tfidf_vectorize((1, 2), max_features=10000,export="data/fake_news/vectorized_bigram.csv")
+    e.tfidf_vectorize((1, 1), max_features=10000,export="data/fake_news/vectorized.csv")
 
     
     ### PCA ###
-    data = pd.read_csv("data/fake_news/vectorized_bigram.csv",delimiter=",",header=None)
+    data = pd.read_csv("data/fake_news/vectorized.csv",delimiter=",",header=None)
     data = data.to_numpy()
     print(data.shape)
     data = data.T
@@ -58,4 +58,4 @@ if __name__ == "__main__":
     ### Export for training ###
     candidates = ["ids","n_quotes","grammar_ratio","pca","labels"]
 
-    e.generate_combined_training_data(candidates,export="data/fake_news/train_c_red_bigram_stem.csv")
+    e.generate_combined_training_data(candidates,export="data/fake_news/train_c_red_stem.csv")

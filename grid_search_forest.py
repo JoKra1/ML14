@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import csv
 
 """
-Grid Search for random forest.
+Grid Search for random forest. Repeated fpr bigram and unigram data!
 """
 
 if __name__ == "__main__":

@@ -13,11 +13,11 @@ Cross-validation for random forest
 
 if __name__ == "__main__":
     ### Load in data ###
-    data = pd.read_csv("data/train_c_red.csv",delimiter=",",header=None)
+    data = pd.read_csv("data/fake_news/train_c_red.csv",delimiter=",",header=None)
     print(data.head)
     data = data.to_numpy()
 
-    data_stem = pd.read_csv("data/train_c_red_stem.csv",delimiter=",",header=None)
+    data_stem = pd.read_csv("data/fake_news/train_c_red_stem.csv",delimiter=",",header=None)
     print(data_stem.head)
     data_stem = data_stem.to_numpy()
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
         feature_names.append(f"pc{i+1}")
 
     ### setup cross-validation ###
-    kf = KFold(n_splits=2,shuffle=False)
+    kf = KFold(n_splits=10,shuffle=False)
     acc = []
     for train_indices, test_indices in kf.split(X_stem):
         ### Split fold ###

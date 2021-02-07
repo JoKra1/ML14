@@ -4,6 +4,7 @@ from nltk import word_tokenize
 import re
 import nltk
 from nltk.corpus import stopwords
+from nltk.stem import SnowballStemmer
 import string
 from matplotlib import pyplot as plt
 import numpy as np
@@ -68,7 +69,7 @@ class Encoder(object):
         ### W2V  ###
         self.w2v = None
 
-    def preprocess(self, replacement_pairs, g_cut=0.4, min_len=20, export=False):
+    def preprocess(self, replacement_pairs, g_cut=0.4, min_len=20, export=False, stem=False):
         """
         Preprocessing function. Performs spell checking, removes
         token sequences that are too short, and offers an export of the
