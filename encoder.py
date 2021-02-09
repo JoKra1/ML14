@@ -44,7 +44,7 @@ class Encoder(object):
     """
     stop_words = stopwords.words('english')
 
-    def __init__(self, data_path):
+    def __init__(self, data_path, test_data_path=None):
         """
         Constructor
 
@@ -61,6 +61,18 @@ class Encoder(object):
                      "preprocessed": [],
                      "vectorized": [],
                      "padded_vectors": []}
+        
+        ### Path for test data if it is given
+        if not test_data_path is None:
+            self.path_test_d = test_data_path
+            
+        ### Dict for storage of preprocessing test steps
+        self.test_data = {"ids": [],
+                          "n_quotes": [],
+                          "grammar_ratio": [],
+                          "preprocessed": [],
+                          "vectorized": [],
+                          "padded_vectors": []}
         ### TFIDF data ###
         self.tfidf = None
         self.vocab = None
@@ -69,7 +81,7 @@ class Encoder(object):
         ### W2V  ###
         self.w2v = None
 
-    def preprocess(self, replacement_pairs, g_cut=0.4, min_len=20, export=False, stem=False):
+    def preprocess(self, replacement_pairs, g_cut=0.4, min_len=20, export=False, stem=False, train=True):
         """
         Preprocessing function. Performs spell checking, removes
         token sequences that are too short, and offers an export of the
@@ -79,103 +91,118 @@ class Encoder(object):
         g_cut                   -- Spellcheck cut-off used to justify exclusion.
         replacement_pairs       -- A list of lists. Each sub-list contains 'to_be_replaced' and 'replacement'
         min_len                 -- minimum token sequence to be included.
-        export                  -- Either False or string to path for export.     
+        export                  -- Either False or string to path for export.
+        stem                    -- Whether or not to stem the words (bool)
+        train                   -- Whether to preprocess the training or testing set (bool)
         """
-
-        data = pd.read_csv(self.path_d, header=0)
-        print(data.head())
-
-        ids = np.array(data["id"])
-        texts = np.array(data["text"])
-        labels = np.array(data["label"])
-
+        
         spellcheck = SpellChecker(language='en')
-
+        
         cleaned = []
         no_text_counter = 0
         spell_check_counter = 0
         too_short_counter = 0
-
-        for id, text, label in tqdm(zip(ids, texts, labels), total=len(ids), desc="Pre-Processing"):
-
-            if type(text) != str:
-                ### This is no text ###
-                no_text_counter += 1
-                continue
-
-            ### Special characters treatment ###
-            for pair in replacement_pairs:
-                text = re.sub(pair[0], pair[1], text)
-
-            ### Capture quotes ###
-            quotes = re.findall(' "[ a-zA-Z0-9,.;:!?\']+"', text)
-            n_quotes = len(quotes)
-
-            ### From now on drop all numbers ###
-            text = re.sub(r'[0-9]+', "", text)
-
-            ### Convert text to lower and remove all punctuation ###
-            lower = text.lower()
-            no_punct = "".join(
-                [c for c in lower if c not in string.punctuation])
-
-            ### Tokenize ###
-            tokens = word_tokenize(no_punct)
-
-            if not len(tokens):
-                ### Too short ###
-                too_short_counter += 1
-                continue
-
-            ### Spell check (note this also includes neo-anglicisms) ###
-            misspelled = spellcheck.unknown(tokens)
-            grammar_ratio = len(misspelled)/len(tokens)
-
-            if grammar_ratio > g_cut:
-                ### This is likely not English. ###
-                # print(tokens[0:10])
-                spell_check_counter +=1
-                continue
-
-            ### Remove Stopwords ###
-            tokens = [t for t in tokens if t not in self.stop_words]
-
-            if len(tokens) < min_len:
-                ### Too short ###
-                too_short_counter += 1
-                continue
-            
-            ### Stemm words ###
-            if stem:
-                ps = SnowballStemmer("english")
-
-                tokens = [ps.stem(t) for t in tokens]
-
-            ### Convert back to string for easier storage ###
-            tokens = " ".join(tokens)
-
-            self.data["ids"].append(id)
-            self.data["labels"].append(label)
-            self.data["n_quotes"].append(n_quotes)
-            self.data["grammar_ratio"].append(grammar_ratio)
-            self.data["preprocessed"].append(tokens)
-
-        print(
-            f"Number of documents after pre-processing: {len(self.data['ids'])}")
         
-        print(f"Removed {no_text_counter} entries that did not contain text")
-        print(f"Removed {spell_check_counter} entries that had a grammar ratio > {g_cut}")
-        print(f"Removed {too_short_counter} entries that had less than {min_len} tokens after removing stopwords")
+        if train:
+            data = pd.read_csv(self.path_d, header=0)
+            print(data.head())
 
-        if type(export) == str:
-            exp = {"ids": self.data["ids"],
-                   "labels": self.data["labels"],
-                   "n_quotes": self.data["n_quotes"],
-                   "grammar_ratio": self.data["grammar_ratio"],
-                   "preprocessed": self.data["preprocessed"]
-                   }
-            cleaned = pd.DataFrame.from_dict(exp)
-            cleaned.to_csv(export, sep=",", index=False,encoding="utf-8")
+            ids = np.array(data["id"])
+            texts = np.array(data["text"])
+
+            labels = np.array(data["label"])
+
+            for id, text, label in tqdm(zip(ids, texts, labels), total=len(ids), desc="Pre-Processing"):
+                try:
+                    n_quotes, grammar_ratio, tokens = self._process_text(text, 
+                                                                         replacement_pairs, 
+                                                                         g_cut, 
+                                                                         min_len, 
+                                                                         stem,
+                                                                         spellcheck)
+                except ValueError as e:
+                    msg = str(e)
+                    
+                    if msg == "This article contains no text":
+                        no_text_counter += 1
+                    elif msg == "Text too short":
+                        too_short_counter += 1
+                    elif msg == "Text too ingrammatical":
+                        spell_check_counter +=1
+                    else:
+                        raise e
+
+                self.data["ids"].append(id)
+                self.data["labels"].append(label)
+                self.data["n_quotes"].append(n_quotes)
+                self.data["grammar_ratio"].append(grammar_ratio)
+                self.data["preprocessed"].append(tokens)
+
+            print(
+                f"Number of documents after pre-processing: {len(self.data['ids'])}")
+
+            print(f"Removed {no_text_counter} entries that did not contain text")
+            print(f"Removed {spell_check_counter} entries that had a grammar ratio > {g_cut}")
+            print(f"Removed {too_short_counter} entries that had less than {min_len} tokens after removing stopwords")
+
+            if type(export) == str:
+                exp = {"ids": self.data["ids"],
+                       "labels": self.data["labels"],
+                       "n_quotes": self.data["n_quotes"],
+                       "grammar_ratio": self.data["grammar_ratio"],
+                       "preprocessed": self.data["preprocessed"]
+                       }
+                cleaned = pd.DataFrame.from_dict(exp)
+                cleaned.to_csv(export, sep=",", index=False,encoding="utf-8")
+        else:
+            data = pd.read_csv(self.path_test_d, header=0)
+            print(data.head())
+
+            ids = np.array(data["id"])
+            texts = np.array(data["text"])
+
+            for id, text in tqdm(zip(ids, texts), total=len(ids), desc="Pre-Processing"):
+                try:
+                    n_quotes, grammar_ratio, tokens = self._process_text(text, 
+                                                                         replacement_pairs, 
+                                                                         g_cut, 
+                                                                         min_len, 
+                                                                         stem,
+                                                                         spellcheck)
+                except ValueError as e:
+                    msg = str(e)
+                    
+                    if msg == "This article contains no text":
+                        no_text_counter += 1
+                    elif msg == "Text too short":
+                        too_short_counter += 1
+                    elif msg == "Text too ingrammatical":
+                        spell_check_counter +=1
+                    else:
+                        raise e
+                        
+                    continue
+
+                self.test_data["ids"].append(id)
+                self.test_data["n_quotes"].append(n_quotes)
+                self.test_data["grammar_ratio"].append(grammar_ratio)
+                self.test_data["preprocessed"].append(tokens)
+
+            print(
+                f"Number of documents after pre-processing: {len(self.test_data['ids'])}")
+
+            print(f"Removed {no_text_counter} entries that did not contain text")
+            print(f"Removed {spell_check_counter} entries that had a grammar ratio > {g_cut}")
+            print(f"Removed {too_short_counter} entries that had less than {min_len} tokens after removing stopwords")
+
+            if type(export) == str:
+                exp = {"ids": self.test_data["ids"],
+                       "n_quotes": self.test_data["n_quotes"],
+                       "grammar_ratio": self.test_data["grammar_ratio"],
+                       "preprocessed": self.test_data["preprocessed"]
+                       }
+                cleaned = pd.DataFrame.from_dict(exp)
+                cleaned.to_csv(export, sep=",", index=False,encoding="utf-8")
 
     def tfidf_vectorize(self, ngrams, min_df=1, max_features=None, train=True, export=False):
         """
@@ -231,18 +258,81 @@ class Encoder(object):
             self.vocab = vocab
             self.vocab_inv = vocab_inv
 
-            ### Each vec here is a max_tfidfvec_len*1 dim vector for a sigle document ###
+            ### Each vec here is a max_tfidfvec_len*1 dim vector for a single document ###
             for vec in tfidf_vectors:
                 self.data["vectorized"].append(vec)
 
             ### Export vectorized data ###
             if type(export) == str:
-                np.savetxt("data/fake_news/vectorized.csv",tfidf_vectors,delimiter=",")
+                np.savetxt(export, tfidf_vectors, delimiter=",")
 
         else:
-            ### ToDo: Use vectorizer attached to instance to process new (test) input ###
-            pass
+            # For each document create a vector of TF*IDF values for all words in final vocab ###.
+            tfidf_vectors = self.tfidf.transform(
+                self.test_data["preprocessed"]).toarray()
+            
+            ### Each vec here is a max_tfidfvec_len*1 dim vector for a single document ###
+            for vec in tfidf_vectors:
+                self.test_data["vectorized"].append(vec)
 
+            ### Export vectorized data ###
+            if type(export) == str:
+                np.savetxt(export, tfidf_vectors, delimiter=",")
+
+    def _process_text(self, text, replacement_pairs, g_cut, min_len, stem, spellcheck):
+        if type(text) != str:
+            ### This is no text ###
+            raise ValueError("This article contains no text")
+
+        ### Special characters treatment ###
+        for pair in replacement_pairs:
+            text = re.sub(pair[0], pair[1], text)
+
+        ### Capture quotes ###
+        quotes = re.findall(' "[ a-zA-Z0-9,.;:!?\']+"', text)
+        n_quotes = len(quotes)
+
+        ### From now on drop all numbers ###
+        text = re.sub(r'[0-9]+', "", text)
+
+        ### Convert text to lower and remove all punctuation ###
+        lower = text.lower()
+        no_punct = "".join(
+            [c for c in lower if c not in string.punctuation])
+
+        ### Tokenize ###
+        tokens = word_tokenize(no_punct)
+
+        if not len(tokens):
+            ### Too short ###
+            raise ValueError("Text too short")
+
+        ### Spell check (note this also includes neo-anglicisms) ###
+        misspelled = spellcheck.unknown(tokens)
+        grammar_ratio = len(misspelled)/len(tokens)
+
+        if grammar_ratio > g_cut:
+            ### This is likely not English. ###
+            # print(tokens[0:10])
+            raise ValueError("Text too ingrammatical")
+
+        ### Remove Stopwords ###
+        tokens = [t for t in tokens if t not in self.stop_words]
+
+        if len(tokens) < min_len:
+            ### Too short ###
+            raise ValueError("Text too short")
+
+        ### Stemm words ###
+        if stem:
+            ps = SnowballStemmer("english")
+
+            tokens = [ps.stem(t) for t in tokens]
+
+        ### Convert back to string for easier storage ###
+        tokens = " ".join(tokens)
+        
+        return (n_quotes, grammar_ratio, tokens)
 
     def reduce_dim(self, data, method, max_updates=-1, folds=20, epochs=100, target_dim=None, export=False):
         """
