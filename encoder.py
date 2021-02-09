@@ -374,11 +374,15 @@ class Encoder(object):
         if type(export) == str:
             np.savetxt(export, reduced, delimiter=",")
     
-    def generate_combined_training_data(self,candidates,export=False):
+    def generate_combined_training_data(self, candidates, export=False, train=True):
         """
         Combines all available features into training set
         """
-        data = [self.data[candidate] for candidate in candidates]
+        if train:
+            data = [self.data[candidate] for candidate in candidates]
+        else:
+            data = [self.test_data[candidate] for candidate in candidates]
+            
         output = []
         for row in zip(*data):
             new_row = []
