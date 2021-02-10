@@ -19,7 +19,6 @@ import itertools
 import gc
 from sklearn.feature_extraction.text import TfidfVectorizer, TfidfTransformer
 from tf_helpers.generate_training_w2v import generate_training_data
-from tf_models.w2v import Word2Vec
 from tf_models.mog import MOG
 from tf_models.pca import PCA
 from scratch_builds.cross_validate import cross_validate
@@ -120,6 +119,12 @@ class Encoder(object):
                                                                          min_len, 
                                                                          stem,
                                                                          spellcheck)
+
+                    self.data["ids"].append(id)
+                    self.data["labels"].append(label)
+                    self.data["n_quotes"].append(n_quotes)
+                    self.data["grammar_ratio"].append(grammar_ratio)
+                    self.data["preprocessed"].append(tokens)
                 except ValueError as e:
                     msg = str(e)
                     
@@ -131,12 +136,6 @@ class Encoder(object):
                         spell_check_counter +=1
                     else:
                         raise e
-
-                self.data["ids"].append(id)
-                self.data["labels"].append(label)
-                self.data["n_quotes"].append(n_quotes)
-                self.data["grammar_ratio"].append(grammar_ratio)
-                self.data["preprocessed"].append(tokens)
 
             print(
                 f"Number of documents after pre-processing: {len(self.data['ids'])}")
@@ -169,6 +168,11 @@ class Encoder(object):
                                                                          min_len, 
                                                                          stem,
                                                                          spellcheck)
+                    
+                    self.test_data["ids"].append(id)
+                    self.test_data["n_quotes"].append(n_quotes)
+                    self.test_data["grammar_ratio"].append(grammar_ratio)
+                    self.test_data["preprocessed"].append(tokens)
                 except ValueError as e:
                     msg = str(e)
                     
@@ -183,10 +187,7 @@ class Encoder(object):
                         
                     continue
 
-                self.test_data["ids"].append(id)
-                self.test_data["n_quotes"].append(n_quotes)
-                self.test_data["grammar_ratio"].append(grammar_ratio)
-                self.test_data["preprocessed"].append(tokens)
+                
 
             print(
                 f"Number of documents after pre-processing: {len(self.test_data['ids'])}")

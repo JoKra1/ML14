@@ -7,6 +7,11 @@ import os
 
 
 class ForestClassifier(object):
+    """
+    Sources:
+    https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html
+    Hands on Machine Learning with SCIKIT-LEARN, Keras, and Tensorflow (Second edition) by Aurelien Geron
+    """
 
     def __init__(self,n,criterion,max_features,bootstrap=True,random_state=0,oob=True):
         ### Attach Forest ###
@@ -74,6 +79,7 @@ class ForestClassifier(object):
         matr = confusion_matrix(y_true=y,y_pred=y_hat,labels=[0,1])
         print("Confusion matrix:\n")
         print(matr)
+        return matr
 
 
 

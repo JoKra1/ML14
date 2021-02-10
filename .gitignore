@@ -3,3 +3,4 @@ data/fake_news/**
 .ipynb_checkpoints
 .vscode/*
 *.dot
+*.png

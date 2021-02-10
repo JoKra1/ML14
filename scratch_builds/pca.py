@@ -6,6 +6,9 @@ import numpy as np
 class PCA(object):
     """
     Performs PCA on the covariance matrix of the centered training data using singular value decomposition.
+    
+    Sources:
+    Hands on Machine Learning with SCIKIT-LEARN, Keras, and Tensorflow (Second edition) by Aurelien Geron
     """
 
     def __init__(self,m):
@@ -24,6 +27,8 @@ class PCA(object):
         """
         relative_dissimilarity = sum(S[m:])/sum(S)
         print(f"Relative dissimilarity for m = {m} is: {relative_dissimilarity}")
+
+
         return relative_dissimilarity
 
     def calculate_mean_square(self,m,S):

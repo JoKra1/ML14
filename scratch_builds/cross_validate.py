@@ -26,6 +26,9 @@ def cross_validate(models, features, labels, k, updates, epochs, shuffle=False):
         updates         -- number of updates to model flexibility (-1 == terminate once test loss increases)
         epochs          -- number of epochs to train at each fold
         shuffle         -- whether to shuffle the data before splitting
+
+    Sources:
+    Implementation based on reader in the LN
     """
     print("Starting cross-validation")
     per_model_losses = []

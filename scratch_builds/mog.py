@@ -57,6 +57,9 @@ class Gauss(object):
 class MOG(object):
     """
     Estimates a GMM model using the EM algorithm.
+
+    Sources:
+    Implementation based on reader in the LN
     """
 
     def __init__(self, k, dim, progress=True):
