@@ -184,7 +184,6 @@ class Encoder(object):
                         spell_check_counter +=1
                     else:
                         raise e
-                        
                     continue
 
                 
