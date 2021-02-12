@@ -81,7 +81,11 @@ def scoreTextInfo(text):
 
             sentenceLengths.append(len(sentence))
 
-
+    if (len(sentenceLengths) < 2) or (len(wordLengths) < 2):
+        return np.array([stat.mean(sentenceLengths), sentenceLengths[0], stat.mean(wordLengths), wordLengths[0],
+                        specialChars["\""], specialChars["\'"], specialChars["."], specialChars[","], specialChars["!"],
+                        specialChars["?"], specialChars[":"]])
+                        
     return np.array([stat.mean(sentenceLengths), stat.stdev(sentenceLengths), stat.mean(wordLengths), stat.stdev(wordLengths),
                         specialChars["\""], specialChars["\'"], specialChars["."], specialChars[","], specialChars["!"],
                         specialChars["?"], specialChars[":"]])
@@ -101,7 +105,7 @@ def scoreSentiAll(data, senti):
         label = data["label"][i]
 
         sentiScores = scoreSenti(cleanLemmas, senti)
-        np.append(sentiScores, label)
+        sentiScores = np.append(sentiScores, label)
 
         df = df.append(pd.DataFrame([sentiScores], columns = cols))
 
