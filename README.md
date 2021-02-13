@@ -5,6 +5,9 @@ For this course we designed a pipeline to classify articles as unreliable or rel
 Three models were evaluated in their ability to achieve this goal: Logistic regression, a naive Bayes classifier, and random forest models.
 All three models achieve accruracies above > 90% on the final set aside test-set. This repository contains all files necessary to replicate the entire pipeline and to visualize the results.
 
+## Data
+The data is available at: https://www.kaggle.com/c/fake-news/data
+
 ## Requirements
 The Python libraries necessary to run the code are listed in the requirements.txt file.
 
