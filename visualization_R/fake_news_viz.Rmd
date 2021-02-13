@@ -17,13 +17,129 @@ library(dplyr)
 ```
 
 
+# Sentence stats 1
+
+```{r}
+dat <- read.csv("final_visualization_data/sentence_stats.csv",sep=",",header = T)
+```
+
+
+```{r}
+# Sentence length
+plot(density(dat$senLengthMean[dat$label == 1]),ylim=c(0,60),col=alpha("yellow",0.3),
+     main="Kernel based PDF estimate for normalized average sentence lengths",
+     xlab="Normalized average sentence length",
+     cex.lab=1.3, cex.axis=1.25, cex.main=1.25,xlim=c(0,0.5))
+polygon(density(dat$senLengthMean[dat$label == 1]),col=alpha("yellow",0.3),border = alpha("yellow",0.3))
+lines(density(dat$senLengthMean[dat$label == 0]),col=alpha("purple",0.3))
+polygon(density(dat$senLengthMean[dat$label == 0]),col=alpha("purple",0.3),border = alpha("purple",0.3))
+legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
+
+mean(dat$senLengthMean[dat$label == 1])
+mean(dat$senLengthMean[dat$label == 0])
+
+sd(dat$senLengthMean[dat$label == 1])
+sd(dat$senLengthMean[dat$label == 0])
+
+# Word length
+plot(density(dat$wordLengthMean[dat$label == 1]),ylim=c(0,60),col=alpha("yellow",0.3),
+     main="Kernel based PDF estimate for normalized average word lengths",
+     xlab="Normalized average word length",
+     cex.lab=1.3, cex.axis=1.25, cex.main=1.25,xlim=c(0,1))
+polygon(density(dat$wordLengthMean[dat$label == 1]),col=alpha("yellow",0.3),border = alpha("yellow",0.3))
+lines(density(dat$wordLengthMean[dat$label == 0]),col=alpha("purple",0.3))
+polygon(density(dat$wordLengthMean[dat$label == 0]),col=alpha("purple",0.3),border = alpha("purple",0.3))
+legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
+
+mean(dat$wordLengthMean[dat$label == 1])
+mean(dat$wordLengthMean[dat$label == 0])
+
+sd(dat$wordLengthMean[dat$label == 1])
+sd(dat$wordLengthMean[dat$label == 0])
+
+mean(dat$`X....1`[dat$label == 1]) - mean(dat$`X....1`[dat$label == 0])
+mean(dat$`X....2`[dat$label == 1]) - mean(dat$`X....2`[dat$label == 0])
+mean(dat$`X....3`[dat$label == 1]) - mean(dat$`X....3`[dat$label == 0])
+mean(dat$`X....4`[dat$label == 1]) - mean(dat$`X....4`[dat$label == 0])
+mean(dat$`X....5`[dat$label == 1]) - mean(dat$`X....5`[dat$label == 0])
+mean(dat$`X....6`[dat$label == 1]) - mean(dat$`X....6`[dat$label == 0])
+
+
+sd(dat$`X....3`[dat$label == 0])
+sd(dat$`X....3`[dat$label == 1])
+```
+
+
+# Sentinet
+
+```{r}
+dat <- read.csv("final_visualization_data/senti_stats.csv",sep=",",header = T)
+```
+
+```{r}
+# Positive
+plot(density(dat$posMean[dat$label == 1]),ylim=c(0,60),col=alpha("yellow",0.3),
+     main="Kernel based PDF estimate for average positive SentiNet scores",
+     xlab="Average positive SentiNet score of article",
+     cex.lab=1.3, cex.axis=1.25, cex.main=1.25,xlim=c(0,0.5))
+polygon(density(dat$posMean[dat$label == 1]),col=alpha("yellow",0.3),border = alpha("yellow",0.3))
+lines(density(dat$posMean[dat$label == 0]),col=alpha("purple",0.3))
+polygon(density(dat$posMean[dat$label == 0]),col=alpha("purple",0.3),border = alpha("purple",0.3))
+legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
+
+
+mean(dat$posMean[dat$label == 1])
+mean(dat$posMean[dat$label == 0])
+
+sd(dat$posMean[dat$label == 1])
+sd(dat$posMean[dat$label == 0])
+
+# Negative
+plot(density(dat$negMean[dat$label == 1]),ylim=c(0,60),col=alpha("yellow",0.3),
+     main="Kernel based PDF estimate for average negative SentiNet scores",
+     xlab="Average negative SentiNet score of article",
+     cex.lab=1.3, cex.axis=1.25, cex.main=1.25,xlim=c(0,0.5))
+polygon(density(dat$negMean[dat$label == 1]),col=alpha("yellow",0.3),border = alpha("yellow",0.3))
+lines(density(dat$negMean[dat$label == 0]),col=alpha("purple",0.3))
+polygon(density(dat$negMean[dat$label == 0]),col=alpha("purple",0.3),border = alpha("purple",0.3))
+legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
+
+
+mean(dat$negMean[dat$label == 1])
+mean(dat$negMean[dat$label == 0])
+
+sd(dat$negMean[dat$label == 1])
+sd(dat$negMean[dat$label == 0])
+# Objective
+
+plot(density(dat$objMean[dat$label == 1]),ylim=c(0,60),col=alpha("yellow",0.3),
+     main="Kernel based PDF estimate for average objective SentiNet scores",
+     xlab="Average objective SentiNet score of article",
+     cex.lab=1.3, cex.axis=1.25, cex.main=1.25,xlim=c(0.5,1))
+polygon(density(dat$objMean[dat$label == 1]),col=alpha("yellow",0.3),border = alpha("yellow",0.3))
+lines(density(dat$objMean[dat$label == 0]),col=alpha("purple",0.3))
+polygon(density(dat$objMean[dat$label == 0]),col=alpha("purple",0.3),border = alpha("purple",0.3))
+legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
+
+
+mean(dat$objMean[dat$label == 1])
+mean(dat$objMean[dat$label == 0])
+
+sd(dat$objMean[dat$label == 1])
+sd(dat$objMean[dat$label == 0])
+```
+
 # Word clouds
 
 Source of code: https://towardsdatascience.com/create-a-word-cloud-with-r-bde3e7422e8a
 
 
 ```{r}
-dat <- read.csv("data/fake_news/cleaned_train_stem.csv",sep=",",header = T)
+dat <- read.csv("data/fake_news/cleaned_train.csv",sep=",",header = T)
+# dat <- read.csv("data/fake_news/cleaned_train_stem.csv",sep=",",header = T)
+
+length(dat$labels[dat$labels == 1])
+length(dat$labels[dat$labels == 0])
 ```
 
 
@@ -92,7 +208,7 @@ hist(sum_dat$art_length,breaks = 100,xlim=c(0,6000),main="Histogram of article l
 
 hist(sum_dat$art_length[sum_dat$label == 1],breaks = 100,col=alpha("yellow",0.3),xlim=c(0,6000),
      main="Histogram of article length",
-     xlab="Article length")
+     xlab="Article length",cex.lab=1.3, cex.axis=1.25, cex.main=1.25)
 hist(sum_dat$art_length[sum_dat$label == 0],breaks = 100,col=alpha("purple",0.3),add=T)
 legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
 
@@ -110,7 +226,8 @@ summary(quotes_reliable)
 sd(quotes_reliable)
 
 hist(quotes_unreliable,col = alpha("yellow",0.3),breaks = 100,
-     xlab = "Number of quotes",main="Histogram of quote frequency",xlim=c(0,110))
+     xlab = "Number of quotes",main="Histogram of quote frequency",xlim=c(0,110),
+     cex.lab=1.3, cex.axis=1.25, cex.main=1.25)
 hist(quotes_reliable,col = alpha("purple",0.3),breaks = 100,add=T)
 legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
 ```
@@ -127,7 +244,8 @@ summary(grammar_reliable)
 sd(grammar_reliable)
 
 plot(density(grammar_unreliable),ylim=c(0,55),col=alpha("yellow",0.3),
-     main="Kernel based PDF estimate for grammar ratio",xlab="Grammar ratio")
+     main="Kernel based PDF estimate for grammar ratio",xlab="Grammar ratio",
+     cex.lab=1.3, cex.axis=1.25, cex.main=1.25)
 polygon(density(grammar_unreliable),col=alpha("yellow",0.3),border = alpha("yellow",0.3))
 lines(density(grammar_reliable),col=alpha("purple",0.3))
 polygon(density(grammar_reliable),col=alpha("purple",0.3),border = alpha("purple",0.3))
@@ -138,7 +256,36 @@ legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
 # PCA visualization
 
 ```{r}
-dat <- read.csv("data/fake_news/pca_viz_red_bigram_stem.csv",sep=",",header = T)
+#dat <- read.csv("final_visualization_data/eigen_values/pca_singular.csv",sep=",",header = F)
+#dat <- read.csv("final_visualization_data/eigen_values/pca_singular_stemmed.csv",sep=",",header = F)
+#dat <- read.csv("final_visualization_data/eigen_values/pca_singular_bigram.csv",sep=",",header = F)
+dat <- read.csv("final_visualization_data/eigen_values/pca_singular_bigram_stemmed.csv",sep=",",header = F)
+
+
+length(dat$V1[dat$V1 < 0])
+
+ratios <- c()
+
+for (i in 1:9999){
+  num <- sum(dat$V1[1:i+1])
+  denom <- sum(dat$V1)
+  ratios <- c(ratios, num/denom)
+}
+
+sum(dat$V1[c(1,2)])/sum(dat$V1)
+plot(ratios,type="l",main="Variance explained per componented retained (Bigram stemmed)",
+     xlab = "k Principal Components retained",ylab="Ratio: Variance explained",lwd=2,
+     cex.lab=1.3, cex.axis=1.25, cex.main=1.25
+     )
+
+```
+
+```{r}
+#dat <- read.csv("final_visualization_data/pca_viz/pca_viz.csv",sep=",",header = T)
+#dat <- read.csv("final_visualization_data/pca_viz/pca_viz_stem.csv",sep=",",header = T)
+#dat <- read.csv("final_visualization_data/pca_viz/pca_viz_bigram.csv",sep=",",header = T)
+dat <- read.csv("final_visualization_data/pca_viz/pca_viz_bigram_stem.csv",sep=",",header = T)
+
 dat$label[dat$label == 1] <- "Fake-news"
 dat$label[dat$label == 0] <- "Validated article"
 ```
@@ -147,18 +294,48 @@ dat$label[dat$label == 0] <- "Validated article"
 ```{r}
 plot(dat$pc1,dat$pc2,col = ifelse(dat$label == "Fake-news",alpha("yellow",0.75),
                                                            alpha("purple",0.75)),
-     pch=19,xlab="PC 1",ylab="PC 2",main="Projections on PCs for Unigram + Bigram TF-IDF vectors (stemmed)")
+     pch=19,xlab="PC 1",ylab="PC 2",main="Projections on PCs for Unigram + Bigram TF-IDF vectors (stemmed)",
+     cex.lab=1.3, cex.axis=1.25, cex.main=1.25)
 legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
 ```
 
+```{r}
+dat <- read.csv("data/fake_news/pca_viz_bigram.csv",sep=",",header = T)
+plot(density(dat$pc4[dat$label == 1]),col = alpha("yellow",0.75),type = "l",
+     main="Kernel based PDF estimate for PC 4",xlab="PC4",
+     cex.lab=1.3, cex.axis=1.25, cex.main=1.25)
+polygon(density(dat$pc4[dat$label == 1]),col=alpha("yellow",0.3),border = alpha("yellow",0.3))
+lines(density(dat$pc4[dat$label == 0]),col = alpha("purple",0.75))
+polygon(density(dat$pc4[dat$label == 0]),col=alpha("purple",0.3),border = alpha("purple",0.3))
+legend("topright",c("Unreliable", "Reliable"),col = c("yellow","purple"),pch=19)
+```
 
 # Forest OOB estimates
 
 ```{r}
-forest50 <- read.csv("data/fake_news/forest50.csv",sep=",",header=T)
-forest75 <- read.csv("data/fake_news/forest75.csv",sep=",",header=T)
-forest100 <- read.csv("data/fake_news/forest100.csv",sep=",",header=T)
-forest150 <- read.csv("data/fake_news/forest150.csv",sep=",",header=T)
+# Unigram, best: 0.94575
+forest50 <- read.csv("final_visualization_data/forest_cv/forest50.csv",sep=",",header=T)
+forest75 <- read.csv("final_visualization_data/forest_cv/forest75.csv",sep=",",header=T)
+forest100 <- read.csv("final_visualization_data/forest_cv/forest100.csv",sep=",",header=T)
+forest150 <- read.csv("final_visualization_data/forest_cv/forest150.csv",sep=",",header=T)
+
+# Unigram stemmed, best; 0.9435
+#forest50 <- read.csv("final_visualization_data/forest_cv/forest50stem.csv",sep=",",header=T)
+#forest75 <- read.csv("final_visualization_data/forest_cv/forest75stem.csv",sep=",",header=T)
+#forest100 <- read.csv("final_visualization_data/forest_cv/forest100stem.csv",sep=",",header=T)
+#forest150 <- read.csv("final_visualization_data/forest_cv/forest150stem.csv",sep=",",header=T)
+
+# Bigram * Unigram, best: 0.9449
+#forest50 <- read.csv("final_visualization_data/forest_cv/forest50bigram.csv",sep=",",header=T)
+#forest75 <- read.csv("final_visualization_data/forest_cv/forest75bigram.csv",sep=",",header=T)
+#forest100 <- read.csv("final_visualization_data/forest_cv/forest100bigram.csv",sep=",",header=T)
+#forest150 <- read.csv("final_visualization_data/forest_cv/forest150bigram.csv",sep=",",header=T)
+
+# Bigram * Unigram stemmed, best: 0.9445
+#forest50 <- read.csv("final_visualization_data/forest_cv/forest50bigram_stem.csv",sep=",",header=T)
+#forest75 <- read.csv("final_visualization_data/forest_cv/forest75bigram_stem.csv",sep=",",header=T)
+#forest100 <- read.csv("final_visualization_data/forest_cv/forest100bigram_stem.csv",sep=",",header=T)
+#forest150 <- read.csv("final_visualization_data/forest_cv/forest150bigram_stem.csv",sep=",",header=T)
 
 forest50$OOBerror <- 1 - forest50$OOB
 forest75$OOBerror <- 1 - forest75$OOB
@@ -175,7 +352,7 @@ colors <- c("red","blue","green","orange","pink","black","purple","darkblue","da
 
 # 50 principal components
 subdat <- forest50[forest50$N == N[1],]
-plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],
+plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],cex.lab=1.3, cex.axis=1.25, cex.main=1.25,
      ylab = "OOB error",xlab="Number of Features",main="50 Principal components",lty="dashed")
 points(NF,subdat$OOBerror,col=colors[1],pch=19,cex=1.25)
 
@@ -189,7 +366,7 @@ for (n in N[2:length(N)]) {
 
 # 75 principal components
 subdat <- forest75[forest75$N == N[1],]
-plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],
+plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],cex.lab=1.3, cex.axis=1.25, cex.main=1.25,
      ylab = "",xlab="Number of Features",main="75 Principal components",lty="dashed")
 points(NF,subdat$OOBerror,col=colors[1],pch=19,cex=1.25)
 
@@ -203,7 +380,7 @@ for (n in N[2:length(N)]) {
 
 # 100 principal components
 subdat <- forest100[forest100$N == N[1],]
-plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],
+plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],cex.lab=1.3, cex.axis=1.25, cex.main=1.25,
      ylab = "OOB error",xlab="",main="100 Principal components",lty="dashed")
 points(NF,subdat$OOBerror,col=colors[1],pch=19,cex=1.25)
 
@@ -217,7 +394,7 @@ for (n in N[2:length(N)]) {
 
 # 150 principal components
 subdat <- forest150[forest150$N == N[1],]
-plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],
+plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],cex.lab=1.3, cex.axis=1.25, cex.main=1.25,
      ylab = "",xlab="",main="150 Principal components",lty="dashed")
 points(NF,subdat$OOBerror,col=colors[1],pch=19,cex=1.25)
 
@@ -233,7 +410,7 @@ par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
    plot(0, 0, type = 'l', bty = 'n', xaxt = 'n', yaxt = 'n')
    legend('bottom',legend = N, col = colors,
           lwd = 5, xpd = TRUE, horiz = TRUE,
-          cex = 1, seg.len=1, bty = 'n',
+          cex = 1.05, seg.len=1, bty = 'n',
           title="        Ensemble Size:")
    
 forest50[forest50$OOB == max(forest50$OOB),]
@@ -248,8 +425,10 @@ forest150[forest150$OOB == max(forest150$OOB),]
 # 100 principal components
 subdat <- forest100[forest100$N == N[1],]
 plot(NF,subdat$OOBerror,type = "l",ylim=c(0.0525,0.125),col=colors[1],
-     ylab = "OOB error",xlab="",main="100 Principal components",lty="dashed")
+     ylab = "OOB error",xlab="",main="100 Principal components",lty="dashed",
+     cex.lab=1.3, cex.axis=1.25, cex.main=1.25)
 points(NF,subdat$OOBerror,col=colors[1],pch=19,cex=1.25)
+
 
 col_count <- 2
 for (n in N[2:length(N)]) {
@@ -258,6 +437,7 @@ for (n in N[2:length(N)]) {
   points(NF,subdat$OOBerror,col=colors[col_count],pch=19,cex=1.25)
   col_count <- col_count + 1
 }
+
 
 par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 4, 0, 4), new = TRUE)
    plot(0, 0, type = 'l', bty = 'n', xaxt = 'n', yaxt = 'n',ylab="")
