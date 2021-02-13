@@ -155,8 +155,10 @@ def classifyBayesian(text, wordProbs, ngram):
     #
     #As we use log probabilities, we sum instead of multiply
 
-    totalReliable = 0
-    totalUnreliable = 0
+    # We start with a small amount in case no evidence is found toward either,
+    # or unreliable, as there is a division
+    totalReliable = 10e-10
+    totalUnreliable = 10e-10
 
 
     for i in range(len(cleanedWords) - ngram + 1):
@@ -167,10 +169,6 @@ def classifyBayesian(text, wordProbs, ngram):
                 probs = wordProbs[token]
                 totalReliable += probs.reliable
                 totalUnreliable += probs.unreliable
-
-    if (totalUnreliable == 0):
-        print(f"No unreliable tokens found, reliable: {totalReliable}")
-        return 0
 
     if (totalReliable / totalUnreliable < 1.0):
         return 0
