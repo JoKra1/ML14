@@ -23,7 +23,7 @@ The Python libraries necessary to run the code are listed in the requirements.tx
 ### Model validation scripts
 - grid_search_forest.py: Performs OOB error score based grid-search to determine optimal forest parameters. Exports data for visualization in R
 - tree_validate.py: Validates best forest model, obtained from grid_search_forest.py, using a 10 fold. Also calculates feature importance.
-- logistic_cs.py: Performs CV to determine optimal logistic regression parameters
+- logistic_cv.py: Performs CV to determine optimal logistic regression parameters
 
 ### Visualization extraction scripts
 - pca_viz_extract.py: extracts eigen-values for variance explained calculation and visualization in R. Also extracts component vectors for visualization in R (projections of TF-IDF vectors on first k principal components)
@@ -31,6 +31,7 @@ The Python libraries necessary to run the code are listed in the requirements.tx
 
 ### Test submission scripts
 - test_trees.py: Calculates submission file for random forest
+- test_logistic.py: Calculates submission file for logistic regression
 
 ## Folders
 
